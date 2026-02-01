@@ -65,7 +65,7 @@ const KnowledgeBase: React.FC<Props> = ({ project, onUpdate, onBack, onNext }) =
   };
 
   const removeFile = (id: string) => {
-    onUpdate({ ...project, files: project.files.filter(f => f.id !== id) });
+    onUpdate({ ...project, files: (project.files || []).filter(f => f.id !== id) });
   };
 
   const categories: Category[] = ['原著小说', '排版参考', '文笔参考'];
@@ -89,7 +89,7 @@ const KnowledgeBase: React.FC<Props> = ({ project, onUpdate, onBack, onNext }) =
         </div>
         <button 
           onClick={onNext}
-          disabled={!project.files.some(f => f.category === '原著小说')}
+          disabled={!(project.files || []).some(f => f.category === '原著小说')}
           className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-30 disabled:grayscale rounded-xl font-bold transition flex items-center space-x-2"
         >
           <span>进入下一步</span>
@@ -110,7 +110,7 @@ const KnowledgeBase: React.FC<Props> = ({ project, onUpdate, onBack, onNext }) =
             >
               <span>{cat}</span>
               <span className="bg-gray-900/50 px-2 py-0.5 rounded-lg text-xs">
-                {project.files.filter(f => f.category === cat).length}
+                {(project.files || []).filter(f => f.category === cat).length}
               </span>
             </button>
           ))}
@@ -150,14 +150,14 @@ const KnowledgeBase: React.FC<Props> = ({ project, onUpdate, onBack, onNext }) =
                 <h3 className="font-bold text-gray-400 uppercase text-xs tracking-wider">当前分类文件列表</h3>
               </div>
               
-              {project.files.filter(f => f.category === activeCategory).length === 0 ? (
+              {((project.files || []).filter(f => f.category === activeCategory)).length === 0 ? (
                 <div className="py-12 flex flex-col items-center justify-center opacity-30">
                   <svg className="w-12 h-12 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" /></svg>
                   <p className="text-sm">暂无上传内容</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {project.files.filter(f => f.category === activeCategory).map(file => (
+                  {((project.files || []).filter(f => f.category === activeCategory)).map(file => (
                     <div key={file.id} className="group flex items-center justify-between bg-gray-800/40 p-4 rounded-2xl border border-gray-700/50 hover:border-blue-500/30 transition shadow-sm">
                       <div className="flex items-center space-x-4 min-w-0">
                         <div className="bg-blue-600/10 p-2 rounded-xl text-blue-400">
