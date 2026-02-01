@@ -1,21 +1,22 @@
 import { Mode, ProjectOutline, PhasePlan, ScriptStyle } from "../types";
 
-// 1. 修复黑屏：Vite 必须使用 import.meta.env
-// 注意：在 Cloudflare 后台设置变量名时，请务必使用 VITE_API_KEY
+// 1. 这里的 VITE_API_KEY 必须和你 Cloudflare 截图里的名字完全一致
 const API_KEY = import.meta.env.VITE_API_KEY || '';
 
-// 2. 替代 SDK 的核心请求函数，保持模型名称和逻辑不变
-async function openRouterRequest(model: string, systemInstruction: string, userContent: string, schema: any) {
-  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+// 2. 这里的 BASE_URL 也可以直接用你后台配置的那个，或者写死
+const BASE_URL = import.meta.env.VITE_BASE_URL || "https://openrouter.ai/api/v1/chat/completions";
+
+async function openRouterRequest(model: string, systemInstruction: string, userContent: string) {
+  const response = await fetch(BASE_URL, {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${API_KEY}`,
       "Content-Type": "application/json",
-      "HTTP-Referer": window.location.origin, 
-      "X-Title": "元木剧本"
+      "HTTP-Referer": window.location.origin,
+      "X-Title": "元幕剧本"
     },
     body: JSON.stringify({
-      "model": model, // 这里会保持传入的 gemini-3-pro-preview
+      "model": model, 
       "messages": [
         { "role": "system", "content": systemInstruction },
         { "role": "user", "content": userContent }
@@ -25,8 +26,8 @@ async function openRouterRequest(model: string, systemInstruction: string, userC
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw { status: response.status, message: JSON.stringify(error) };
+    const errorData = await response.json();
+    throw { status: response.status, message: JSON.stringify(errorData) };
   }
 
   const data = await response.json();
@@ -68,13 +69,7 @@ export const geminiService = {
 3. **阶段结构**：第一阶段固定 10 集。
 4. **受众对焦**：${mode}模式。`;
 
-      // 保持你的模型名称 gemini-3-pro-preview
-      const response = await openRouterRequest(
-        "gemini-3-pro-preview", 
-        systemInstruction, 
-        `素材：\n${novelText}`,
-        {} // OpenRouter 模式下 schema 已通过 systemInstruction 和 response_format 处理
-      );
+      const response = await openRouterRequest("gemini-3-pro-preview", systemInstruction, `素材：\n${novelText}`);
       return JSON.parse(response.text);
     });
   },
@@ -91,7 +86,6 @@ export const geminiService = {
   ): Promise<any> => {
     return callWithRetry(async () => {
       const isFirstPhase = phasePlan.phaseIndex === 1;
-
       const styleInstruction = scriptStyle === '情绪流' 
         ? `【流派：情绪流】极致冲突，节奏爆破，反派脑残化嚣张化，情绪拉扯拉满，爽就完事了。`
         : `【流派：非情绪流】诙谐幽默，反套路脑洞，融入热梗，对话有机锋且有趣。`;
@@ -134,13 +128,7 @@ export const geminiService = {
         
         [风格文笔参考]：\n${styleRef}`;
 
-      // 保持你的模型名称 gemini-3-pro-preview
-      const response = await openRouterRequest(
-        "gemini-3-pro-preview", 
-        systemInstruction, 
-        userContent,
-        {}
-      );
+      const response = await openRouterRequest("gemini-3-pro-preview", systemInstruction, userContent);
       return JSON.parse(response.text);
     });
   }
