@@ -34,7 +34,23 @@ const OutlineStage: React.FC<Props> = ({ project, onUpdate, onBack }) => {
 
   const downloadText = () => {
     if (!project.outline) return;
-    const content = `作品名：${project.name}\n创作模式：${project.mode}\n\n【剧本故事大纲】\n${project.outline.content}\n\n【人物小传】\n${project.outline.characters.map(c => `姓名：${c.name}，性别：${c.gender}，年龄：${c.age}，身份：${c.identity}，外表：${c.appearance}，成长经历：${c.growth}，动机：${c.motivation}`).join('\n\n')}\n\n【阶段规划路线图】\n${project.outline.phasePlans.map(p => `阶段 ${p.phaseIndex} (共${p.episodes}集): ${p.description}\n高潮点：${p.climax}`).join('\n\n')}`;
+    
+    // 安全地处理可能缺失的数组字段
+    const chars = project.outline.characters || [];
+    const phases = project.outline.phasePlans || [];
+    
+    const content = `作品名：${project.name}
+创作模式：${project.mode}
+
+【剧本故事大纲】
+${project.outline.content}
+
+【人物小传】
+${chars.map(c => `姓名：${c.name}，性别：${c.gender}，年龄：${c.age}，身份：${c.identity}，外表：${c.appearance}，成长经历：${c.growth}，动机：${c.motivation}`).join('\n\n')}
+
+【阶段规划路线图】
+${phases.map(p => `阶段 ${p.phaseIndex} (共${p.episodes}集): ${p.description}\n高潮点：${p.climax}`).join('\n\n')}`;
+
     const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -125,7 +141,7 @@ const OutlineStage: React.FC<Props> = ({ project, onUpdate, onBack }) => {
                 onChange={(e) => setSelectedNovelId(e.target.value)}
                 className="w-full bg-gray-800/80 border border-gray-700 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
               >
-                {novelFiles.length === 0 ? <option>未检测到小说文件</option> : novelFiles.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+               {(novelFiles || []).length === 0 ? <option>未检测到小说文件</option> : (novelFiles || []).map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
               </select>
             </div>
           </div>
@@ -137,7 +153,7 @@ const OutlineStage: React.FC<Props> = ({ project, onUpdate, onBack }) => {
                 <span className="text-[10px] bg-blue-600/20 text-blue-400 px-2 py-0.5 rounded-full">65-80集</span>
               </div>
               <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-                {project.outline.phasePlans.map((plan, idx) => (
+                {(project.outline.phasePlans || []).map((plan, idx) => (
                   <div key={idx} className={`p-4 rounded-2xl border relative overflow-hidden transition ${plan.phaseIndex === 1 ? 'border-amber-500/50 bg-amber-500/5' : 'border-gray-800 bg-gray-900/40'}`}>
                     {plan.phaseIndex === 1 && <div className="absolute top-0 right-0 bg-amber-500 text-[8px] font-black px-2 py-0.5 rounded-bl-lg">核心首战</div>}
                     <div className="flex justify-between items-center mb-2">
@@ -186,7 +202,7 @@ const OutlineStage: React.FC<Props> = ({ project, onUpdate, onBack }) => {
                   <span>漫剧核心角色库</span>
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {project.outline.characters.map((char, i) => (
+                  {(project.outline.characters || []).map((char, i) => (
                     <div key={i} className="group bg-gray-800/30 p-6 rounded-2xl border border-gray-700/50 hover:border-purple-500/30 transition shadow-inner relative overflow-hidden">
                       <div className="absolute -right-4 -bottom-4 text-purple-600/5 opacity-0 group-hover:opacity-100 transition rotate-12">
                         <svg className="w-24 h-24" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" /></svg>
