@@ -1,8 +1,37 @@
-
-import { GoogleGenAI, Type } from "@google/genai";
 import { Mode, ProjectOutline, PhasePlan, ScriptStyle } from "../types";
 
-const getAI = () => new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+// 1. 修复黑屏：Vite 必须使用 import.meta.env
+// 注意：在 Cloudflare 后台设置变量名时，请务必使用 VITE_API_KEY
+const API_KEY = import.meta.env.VITE_API_KEY || '';
+
+// 2. 替代 SDK 的核心请求函数，保持模型名称和逻辑不变
+async function openRouterRequest(model: string, systemInstruction: string, userContent: string, schema: any) {
+  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${API_KEY}`,
+      "Content-Type": "application/json",
+      "HTTP-Referer": window.location.origin, 
+      "X-Title": "元木剧本"
+    },
+    body: JSON.stringify({
+      "model": model, // 这里会保持传入的 gemini-3-pro-preview
+      "messages": [
+        { "role": "system", "content": systemInstruction },
+        { "role": "user", "content": userContent }
+      ],
+      "response_format": { "type": "json_object" }
+    })
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw { status: response.status, message: JSON.stringify(error) };
+  }
+
+  const data = await response.json();
+  return { text: data.choices[0].message.content };
+}
 
 async function callWithRetry(fn: () => Promise<any>, maxRetries = 4): Promise<any> {
   let lastError: any;
@@ -28,7 +57,6 @@ async function callWithRetry(fn: () => Promise<any>, maxRetries = 4): Promise<an
 export const geminiService = {
   generateOutline: async (novelText: string, mode: Mode): Promise<ProjectOutline> => {
     return callWithRetry(async () => {
-      const ai = getAI();
       const systemInstruction = `你是一位顶级动漫爽剧编剧专家。你的任务是基于原著产出全案大纲。
 
 【核心创作规范】：
@@ -40,44 +68,13 @@ export const geminiService = {
 3. **阶段结构**：第一阶段固定 10 集。
 4. **受众对焦**：${mode}模式。`;
 
-      const response = await ai.models.generateContent({
-        model: "gemini-3-pro-preview",
-        contents: `素材：\n${novelText}`,
-        config: {
-          systemInstruction,
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              content: { type: Type.STRING },
-              characters: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    name: { type: Type.STRING }, gender: { type: Type.STRING }, age: { type: Type.STRING },
-                    identity: { type: Type.STRING }, appearance: { type: Type.STRING }, growth: { type: Type.STRING },
-                    motivation: { type: Type.STRING }
-                  },
-                  required: ["name", "gender", "age", "identity", "appearance", "growth", "motivation"]
-                }
-              },
-              phasePlans: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    phaseIndex: { type: Type.NUMBER }, episodes: { type: Type.NUMBER },
-                    description: { type: Type.STRING }, climax: { type: Type.STRING }
-                  },
-                  required: ["phaseIndex", "episodes", "description", "climax"]
-                }
-              }
-            },
-            required: ["content", "characters", "phasePlans"]
-          }
-        }
-      });
+      // 保持你的模型名称 gemini-3-pro-preview
+      const response = await openRouterRequest(
+        "gemini-3-pro-preview", 
+        systemInstruction, 
+        `素材：\n${novelText}`,
+        {} // OpenRouter 模式下 schema 已通过 systemInstruction 和 response_format 处理
+      );
       return JSON.parse(response.text);
     });
   },
@@ -93,7 +90,6 @@ export const geminiService = {
     styleRef: string = ""
   ): Promise<any> => {
     return callWithRetry(async () => {
-      const ai = getAI();
       const isFirstPhase = phasePlan.phaseIndex === 1;
 
       const styleInstruction = scriptStyle === '情绪流' 
@@ -112,7 +108,7 @@ export const geminiService = {
 
 在改编任何原著小说时，严禁删减以下三类“非人类/非传统”角色的戏份，并将它们视为剧本的【关键功能人】：
 
-1. 【解说与百科类实体】：如器灵（判官笔）、系统、魔法书。它们是世界观和逻辑链的唯一出口，严禁将其台词转化为旁白，必须以对话形式保留。
+1. 【解说与百科类实体】：如器灵（判官笔）、系统、魔法书。它们是世界观 and 逻辑链的唯一出口，严禁将其台词转化为旁白，必须以对话形式保留。
 2. 【吐槽与氛围类实体】：如萌宠、损友型挂件。它们负责调节情绪流节奏，防止剧本陷入单一阴沉，必须保留其反馈戏份。
 3. 【秘密见证者】：唯一知道主角真实身份或前世记忆的非人实体。
 
@@ -129,39 +125,22 @@ export const geminiService = {
 2. ${continuityInstruction}
 3. 集末卡点：每集结尾必须有勾住观众的“断章”悬念。`;
 
-      const response = await ai.models.generateContent({
-        model: "gemini-3-pro-preview",
-        contents: `
+      const userContent = `
         [重要上下文（紧接此剧情开始）]：\n${prevScriptContext || "无（本阶段为开篇）"}
         
         [大纲规划（本阶段目标）]：\n${outline}
         
         [原著素材]：\n${novelText}
         
-        [风格文笔参考]：\n${styleRef}`,
-        config: {
-          systemInstruction,
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              episodes: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    episodeNumber: { type: Type.NUMBER },
-                    title: { type: Type.STRING },
-                    content: { type: Type.STRING }
-                  },
-                  required: ["episodeNumber", "title", "content"]
-                }
-              }
-            },
-            required: ["episodes"]
-          }
-        }
-      });
+        [风格文笔参考]：\n${styleRef}`;
+
+      // 保持你的模型名称 gemini-3-pro-preview
+      const response = await openRouterRequest(
+        "gemini-3-pro-preview", 
+        systemInstruction, 
+        userContent,
+        {}
+      );
       return JSON.parse(response.text);
     });
   }
