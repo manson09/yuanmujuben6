@@ -64,7 +64,7 @@ export const geminiService = {
 3. **阶段结构**：第一阶段固定 10 集。
 4. **受众对焦**：${mode}模式。`;
 
-      const response = await openRouterRequest("gemini-3-pro-preview", systemInstruction, `素材：\n${novelText}`);
+      const response = await openRouterRequest("google/gemini-3-pro-preview", systemInstruction, `素材：\n${novelText}`);
       return JSON.parse(response.text);
     });
   },
@@ -123,7 +123,7 @@ export const geminiService = {
         
         [风格文笔参考]：\n${styleRef}`;
 
-      const response = await openRouterRequest("gemini-3-pro-preview", systemInstruction, userContent);
+      const response = await openRouterRequest("google/gemini-3-pro-preview", systemInstruction, userContent);
       return JSON.parse(response.text);
     });
   }
