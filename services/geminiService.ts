@@ -9,7 +9,6 @@ async function openRouterRequest(model: string, systemInstruction: string, userC
       "Authorization": `Bearer ${API_KEY}`,
       "Content-Type": "application/json",
       "HTTP-Referer": window.location.origin,
-      "X-Title": "元幕剧本"
     },
     body: JSON.stringify({
       "model": model, 
