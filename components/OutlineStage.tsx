@@ -11,10 +11,10 @@ interface Props {
 
 const OutlineStage: React.FC<Props> = ({ project, onUpdate, onBack }) => {
   const [loading, setLoading] = useState(false);
-  const [selectedNovelId, setSelectedNovelId] = useState<string>(project.files.find(f => f.category === '原著小说')?.id || '');
+  const [selectedNovelId, setSelectedNovelId] = useState<string>((project.files || []).find(f => f.category === '原著小说')?.id || '');
   const [mode, setMode] = useState<Mode>(project.mode);
 
-  const novelFiles = project.files.filter(f => f.category === '原著小说');
+  const novelFiles = (project.files || []).filter(f => f.category === '原著小说');
 
   const generate = async () => {
     const novel = novelFiles.find(f => f.id === selectedNovelId);
