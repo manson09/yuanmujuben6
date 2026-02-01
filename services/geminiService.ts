@@ -1,11 +1,7 @@
 import { Mode, ProjectOutline, PhasePlan, ScriptStyle } from "../types";
 
-// 1. 这里的 VITE_API_KEY 必须和你 Cloudflare 截图里的名字完全一致
 const API_KEY = import.meta.env.VITE_API_KEY || '';
-
-// 2. 这里的 BASE_URL 也可以直接用你后台配置的那个，或者写死
 const BASE_URL = import.meta.env.VITE_BASE_URL || "https://openrouter.ai/api/v1/chat/completions";
-
 async function openRouterRequest(model: string, systemInstruction: string, userContent: string) {
   const response = await fetch(BASE_URL, {
     method: "POST",
